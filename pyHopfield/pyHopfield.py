@@ -4,6 +4,12 @@ import numpy as np
 import sys
 import random
 
+
+class HopfieldNetwork:
+    
+    def __init__(self):
+        pass
+
 class App(Frame):
 
     def __init__(self, master,cmd_args,mat_size = (10,10),cell_size = (20,20),pix_active_val = 1):
