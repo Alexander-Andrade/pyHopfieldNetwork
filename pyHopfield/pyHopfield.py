@@ -10,6 +10,7 @@ class HopfieldNetwork:
     def __init__(self,figures,w_size):
         #weighting coefficient matrix
         self.w_size = w_size
+        self.neurons_num = self.w_size[0] * self.w_size[1]
         self.W = np.zeros(w_size,dtype = np.int8)
         self.figures = figures
 
@@ -25,6 +26,31 @@ class HopfieldNetwork:
     def train_all(self):
         for fig in self.figures:
             self.train(fig)
+
+    def isReferenceFigure(self,fig):
+        for ref_fig in self.figures:
+            if  np.array_equal(ref_fig,fig):
+                return True
+        return False
+
+    def recognize(self,figure):
+        fig = figure.copy()
+        i = 0
+        #until it coincides with the known figure
+        while not self.isReferenceFigure(figure):
+            self.correctRandNeuron()
+
+    @staticmethod
+    def signum(a,b):
+        return (a > b) - (a < b) 
+
+    def correctRandNeuron(self,fig):
+        #randomly select a neuron to update it value
+        r = random.randrange(0,self.neurons_num)
+        net = 0
+        for i in range(self.neurons_num):
+            net += fig[i] * self.W[i][r]
+        #sig_net = signum(
 
 class App(Frame):
 
@@ -131,11 +157,13 @@ class App(Frame):
     def __del__(self):
        self.destroy();
        self.quit();
+    
+    
 
 if __name__ == '__main__':
     #initialize random generator from sys time
     random.seed()
-    hn = HopfieldNetwork((10,10))
+    #hn = HopfieldNetwork((10,10))
     '''
     root = Tk()
     app = App(root,sys.argv[1:])
