@@ -7,8 +7,24 @@ import random
 
 class HopfieldNetwork:
     
-    def __init__(self):
-        pass
+    def __init__(self,figures,w_size):
+        #weighting coefficient matrix
+        self.w_size = w_size
+        self.W = np.zeros(w_size,dtype = np.int8)
+        self.figures = figures
+
+
+    def train(self,figure):
+        for i in range(w_size[0]):
+            for j in range(w_size[1]):
+                if i == j:
+                    self.W[i][j] = 0
+                else:
+                    self.W[i][j] += figure[i] * figure[j] 
+
+    def train_all(self):
+        for fig in self.figures:
+            self.train(fig)
 
 class App(Frame):
 
@@ -119,9 +135,12 @@ class App(Frame):
 if __name__ == '__main__':
     #initialize random generator from sys time
     random.seed()
+    hn = HopfieldNetwork((10,10))
+    '''
     root = Tk()
     app = App(root,sys.argv[1:])
     app.mainloop()
+    '''
    
     
     
