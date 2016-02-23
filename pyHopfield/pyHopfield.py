@@ -7,21 +7,23 @@ import random
 
 class HopfieldNetwork:
     
-    def __init__(self,figures,w_size):
+    def __init__(self,figures,mat_size,max_idle_it = 200):
         #weighting coefficient matrix
-        self.w_size = w_size
-        self.neurons_num = self.w_size[0] * self.w_size[1]
-        self.W = np.zeros(w_size,dtype = np.int8)
+        self.neurons_num = mat_size[0] * mat_size[1]
+        self.W = np.zeros(self.neurons_num * self.neurons_num, dtype = np.int8)
         self.figures = figures
-
+        #max number of the idle iterations
+        self.max_idle_it = max_idle_it
+        self.train_all()
 
     def train(self,figure):
-        for i in range(w_size[0]):
-            for j in range(w_size[1]):
+        for i in range(self.neurons_num):
+            for j in range(i):
                 if i == j:
                     self.W[i][j] = 0
                 else:
-                    self.W[i][j] += figure[i] * figure[j] 
+                    self.W[i][j] += figure[i] * figure[j]
+                    self.W[j][i] = self.W[i][j] 
 
     def train_all(self):
         for fig in self.figures:
@@ -36,9 +38,20 @@ class HopfieldNetwork:
     def recognize(self,figure):
         fig = figure.copy()
         i = 0
+        iddle_it = 0
+        is_corrected = False
         #until it coincides with the known figure
-        while not self.isReferenceFigure(figure):
-            self.correctRandNeuron()
+        while not self.isReferenceFigure(fig):
+            corrected = self.correctRandNeuron(fig)
+            i += 1
+            if is_corrected:
+                iddle_it = 0
+            else:
+                iddle_it += 1
+            if iddle_it == self.max_idle_it:
+                return (fig,False,i)
+        return (fig,True,i)
+
 
     @staticmethod
     def signum(a,b):
@@ -50,7 +63,12 @@ class HopfieldNetwork:
         net = 0
         for i in range(self.neurons_num):
             net += fig[i] * self.W[i][r]
-        #sig_net = signum(
+        sig_net = HopfieldNetwork.signum(net)
+        #change the current neuron
+        if sig_net != fig[r]:
+            fig[r] = sig_net
+            return True
+        return False
 
 class App(Frame):
 
@@ -61,33 +79,37 @@ class App(Frame):
         #pixels to show one neuron
         self.cell_size = cell_size
         self.mat_size = mat_size
+        #we take picture matrix as vector
+        self.vect_size = self.mat_size * self.mat_size
         self.pix_active_val = pix_active_val
         self.im_size = (self.cell_size[0] * self.mat_size[0],self.cell_size[1] * self.mat_size[1])
         self.figures = []
         self.readFiguresFromFile(cmd_args,self.mat_size)
+        self.hopfield = HopfieldNetwork(self.figures,self.mat_size)
         #set current figure accordingly to initial combobox state
         self.cur_fig = self.figures[0].copy()
         self.__createWidgets();
         #set init combobox value
         self.combo_figures.set(self.combo_figures['values'][0])
-        self.showFigure(self.canvas_left,self.figures[0],self.pix_active_val,self.cell_size)
+        self.showVector(self.canvas_left,self.figures[0],self.pix_active_val,self.cell_size)
         
 
     def readFiguresFromFile(self,cmd_args,mat_size):
-        self.figures = [ np.fromfile(fileName,dtype=np.int8,count=-1,sep=',').reshape(mat_size) for fileName in cmd_args]
+        self.figures = [ np.fromfile(fileName,dtype=np.int8,count=-1,sep=',') for fileName in cmd_args]
 
 
-    def showFigure(self,canvas,fig,pix_active_val = 1,cell_size = (10,10),cell_color = 'black',cell_reduce = 1):
+    def showVector(self,canvas,fig,pix_active_val = 1,cell_size = (10,10),cell_color = 'black',cell_reduce = 1):
         #clear canvas
         canvas.delete('all')
-        mat_size = fig.shape
         x = 0
         y = 0
-        for i in range(mat_size[0]):
+        row_beg = 0
+        for i in range(self.mat_size[0]):
             x = cell_size[0] * i
-            for j in range(mat_size[1]):
+            for j in range(self.mat_size[1]):
                 y = cell_size[1] * j
-                if fig[j][i] == pix_active_val:
+                row_beg = j * self.mat_size
+                if fig[row_beg + i] == pix_active_val:
                     canvas.create_rectangle(x + cell_reduce,y + cell_reduce,x + cell_size[0] - cell_reduce,y + cell_size[1] - cell_reduce,fill=cell_color)
     
     def findFigureIndex(self):
@@ -132,7 +154,8 @@ class App(Frame):
 
 
     def recognize_event(self):
-        pass
+        recogn_fig = self.hopfield.recognize(self.cur_fig)
+        self.showVector(self.canvas_right, recogn_fig,1,self.cell_size)
 
     def spoil_event(self):
         self.getCopyToCurFigure()
@@ -140,19 +163,19 @@ class App(Frame):
         spoil_perc = self.scale_interf.get()
         self.spoilFigure(self.cur_fig,spoil_perc)
         #show current figure
-        self.showFigure(self.canvas_left, self.cur_fig,1,self.cell_size)
+        self.showVector(self.canvas_left, self.cur_fig,1,self.cell_size)
 
     def spoilFigure(self,fig,spoil_perc,value = 1,inv_value = -1):
         #(x,y) coordinates of the figure to spoil it (invert values)
         fig_coord = set()
         while len(fig_coord) < spoil_perc:
-            fig_coord.add(( random.randint(0,self.mat_size[0] - 1),random.randint(0,self.mat_size[1] - 1)))
+            fig_coord.add( random.randint(0,self.vect_size - 1))
         #then invert this pixels
         for coord in fig_coord:
-            if fig[coord[0]][coord[1]] == value:
-                fig[coord[0]][coord[1]] = inv_value
+            if fig[coord[0]] == value:
+                fig[coord[0]] = inv_value
             else:
-                fig[coord[0]][coord[1]] = value
+                fig[coord[0]] = value
 
     def __del__(self):
        self.destroy();
@@ -163,12 +186,11 @@ class App(Frame):
 if __name__ == '__main__':
     #initialize random generator from sys time
     random.seed()
-    #hn = HopfieldNetwork((10,10))
-    '''
     root = Tk()
     app = App(root,sys.argv[1:])
     app.mainloop()
-    '''
+    
+    
    
     
     
