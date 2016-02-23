@@ -10,7 +10,7 @@ class HopfieldNetwork:
     def __init__(self,figures,mat_size,max_idle_it = 200):
         #weighting coefficient matrix
         self.neurons_num = mat_size[0] * mat_size[1]
-        self.W = np.zeros(self.neurons_num * self.neurons_num, dtype = np.int8)
+        self.W = np.zeros(self.neurons_num * self.neurons_num, dtype = np.int8).reshape((self.neurons_num,self.neurons_num))
         self.figures = figures
         #max number of the idle iterations
         self.max_idle_it = max_idle_it
@@ -80,7 +80,7 @@ class App(Frame):
         self.cell_size = cell_size
         self.mat_size = mat_size
         #we take picture matrix as vector
-        self.vect_size = self.mat_size * self.mat_size
+        self.vect_size = self.mat_size[0] * self.mat_size[1]
         self.pix_active_val = pix_active_val
         self.im_size = (self.cell_size[0] * self.mat_size[0],self.cell_size[1] * self.mat_size[1])
         self.figures = []
@@ -108,7 +108,7 @@ class App(Frame):
             x = cell_size[0] * i
             for j in range(self.mat_size[1]):
                 y = cell_size[1] * j
-                row_beg = j * self.mat_size
+                row_beg = j * self.mat_size[1]
                 if fig[row_beg + i] == pix_active_val:
                     canvas.create_rectangle(x + cell_reduce,y + cell_reduce,x + cell_size[0] - cell_reduce,y + cell_size[1] - cell_reduce,fill=cell_color)
     
@@ -189,6 +189,7 @@ if __name__ == '__main__':
     root = Tk()
     app = App(root,sys.argv[1:])
     app.mainloop()
+    
     
     
    
