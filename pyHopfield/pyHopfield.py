@@ -7,7 +7,7 @@ import random
 
 class HopfieldNetwork:
     
-    def __init__(self,figures,mat_size,max_idle_it = 200):
+    def __init__(self,figures,mat_size,max_idle_it = 500):
         #weighting coefficient matrix
         self.neurons_num = mat_size[0] * mat_size[1]
         self.W = np.zeros(self.neurons_num * self.neurons_num, dtype = np.int8).reshape((self.neurons_num,self.neurons_num))
@@ -42,7 +42,7 @@ class HopfieldNetwork:
         is_corrected = False
         #until it coincides with the known figure
         while not self.isReferenceFigure(fig):
-            corrected = self.correctRandNeuron(fig)
+            is_corrected = self.correctRandNeuron(fig)
             i += 1
             if is_corrected:
                 iddle_it = 0
@@ -55,7 +55,7 @@ class HopfieldNetwork:
 
     @staticmethod
     def signum(a,b):
-        return (a > b) - (a < b) 
+        return int(a > b) - int(a < b) 
 
     def correctRandNeuron(self,fig):
         #randomly select a neuron to update it value
@@ -63,7 +63,7 @@ class HopfieldNetwork:
         net = 0
         for i in range(self.neurons_num):
             net += fig[i] * self.W[i][r]
-        sig_net = HopfieldNetwork.signum(net)
+        sig_net = HopfieldNetwork.signum(net,0)
         #change the current neuron
         if sig_net != fig[r]:
             fig[r] = sig_net
@@ -154,7 +154,7 @@ class App(Frame):
 
 
     def recognize_event(self):
-        recogn_fig = self.hopfield.recognize(self.cur_fig)
+        recogn_fig,success,n_iters = self.hopfield.recognize(self.cur_fig)
         self.showVector(self.canvas_right, recogn_fig,1,self.cell_size)
 
     def spoil_event(self):
@@ -172,10 +172,10 @@ class App(Frame):
             fig_coord.add( random.randint(0,self.vect_size - 1))
         #then invert this pixels
         for coord in fig_coord:
-            if fig[coord[0]] == value:
-                fig[coord[0]] = inv_value
+            if fig[coord] == value:
+                fig[coord] = inv_value
             else:
-                fig[coord[0]] = value
+                fig[coord] = value
 
     def __del__(self):
        self.destroy();
