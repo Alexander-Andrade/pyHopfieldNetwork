@@ -63,10 +63,10 @@ class HopfieldNetwork:
         net = 0
         for i in range(self.neurons_num):
             net += fig[i] * self.W[i][r]
-        sig_net = HopfieldNetwork.signum(net,0)
+        s = HopfieldNetwork.signum(net,0)
         #change the current neuron
-        if sig_net != fig[r]:
-            fig[r] = sig_net
+        if s != fig[r]:
+            fig[r] = s
             return True
         return False
 
